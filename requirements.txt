@@ -1,0 +1,4 @@
+boto3~=1.9.245
+click~=7.0
+parallelpipe~=0.2.6
+pre-commit~=1.18.3
