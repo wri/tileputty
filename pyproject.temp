@@ -1,0 +1,60 @@
+[tool.tileputty]
+name = "tileputty"
+version = "0.1.0"
+description = "Tool to upload tile caches to AWS S3"
+authors = [
+    "Thomas Maschler <thomas.maschler@wri.org>"
+]
+license = "MIT"
+readme = "README.md"
+python = "^3.7"
+homepage = "https://github.com/wri/tileputty"
+repository = "https://github.com/wri/tileputty"
+documentation = "https://github.com/wri/tileputty"
+
+keywords = ["tilecache", "aws"]
+
+classifiers = [
+    "Topic :: Software Development"
+]
+
+# Requirements
+[tool.tileputty.dependencies]
+Boto3 = "^1.9.245"
+Click = "^7.0"
+Parallelpipe = "^0.2.6"
+
+
+[tool.tileputty.dev-dependencies]
+black = { version = "^18.3-alpha.0", python = "^3.7" }
+pre-commit = "^1.18.3"
+pytest = "^5.2.1"
+
+
+[tool.tileputty.scripts]
+tileputty = "tileputty.upload_tiles:cli"
+
+
+[tool.black]
+line-length = 88
+target_version = ['py36']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
