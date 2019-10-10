@@ -1,14 +1,9 @@
 from setuptools import setup
 
-with open("readme.md", "r") as fh:
-    long_description = fh.read()
-
 setup(
     name="tileputty",
     version="0.1.1",
     description="Tool to upload a tile cache to AWS S3",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://github.com/wri/tileputty",
     packages=["tileputty"],
     author="Thomas Maschler",
