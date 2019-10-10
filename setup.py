@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="tileputty",
-    version="0.1.1",
+    version="0.1.2",
     description="Tool to upload a tile cache to AWS S3",
     url="https://github.com/wri/tileputty",
     packages=["tileputty"],
