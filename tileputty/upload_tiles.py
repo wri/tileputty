@@ -1,54 +1,44 @@
-import json
 import logging
 import multiprocessing
 import os
 import sys
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from logging import Logger
+from typing import Iterator
 
 import boto3
 import click
-from botocore.exceptions import ClientError
 from parallelpipe import stage
 
+LOGGER: Logger = logging.getLogger("tileputty")
+CORES: int = multiprocessing.cpu_count()
 
-LOGGER = logging.getLogger("tileputty")
-CORES = multiprocessing.cpu_count()
-EXPIRES = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(days=365 * 10 + 2)
+# File headers for different formats
 MVT_META = {
     "ContentType": "application/x-protobuf",
-    "ContentEncoding": "gzip",
-    "Expires": datetime.strftime(EXPIRES, "%a, %d-%b-%Y %H:%M:%S %Z"),
+    "Cache-Control": "max-age=31536000",  # 1 yr
 }
-PNG_META = {
-    "ContentType": "image/png",
-    "Expires": datetime.strftime(EXPIRES, "%a, %d-%b-%Y %H:%M:%S %Z"),
-}
-JPG_META = {
-    "ContentType": "image/jpeg",
-    "Expires": datetime.strftime(EXPIRES, "%a, %d-%b-%Y %H:%M:%S %Z"),
-}
+PNG_META = {"ContentType": "image/png", "Cache-Control": "max-age=31536000"}  # 1 yr
+JPG_META = {"ContentType": "image/jpeg", "Cache-Control": "max-age=31536000"}  # 1 yr
 JSON_META = {"ContentType": "application/json"}
 
-S3 = boto3.client(
-    "s3"
-)  # TODO: figure out if there is a better way to pool connections -> one per process
+ARGS = {
+    ".pbf": MVT_META,
+    ".mvt": MVT_META,
+    ".png": PNG_META,
+    ".jpg": JPG_META,
+    ".json": JSON_META,
+}
 
 
 @click.command()
 @click.option("--bucket", default="gfw-tiles", help="AWS Bucket")
-@click.option("--layer", help="Dataset Name")
+@click.option("--dataset", help="Dataset Name")
 @click.option("--version", help="Dataset Version ID")
-@click.option("--option", default="default", help="Dataset Version ID")
-@click.option("--ext", default="mvt", help="Tile Cache format")
-@click.option(
-    "--update_latest",
-    is_flag=True,
-    help="Update latest file in root folder with latest version number",
-)
+@click.option("--implementation", default="default", help="Tile Cache Implementation")
 @click.argument("tile_cache")
-def cli(tile_cache, layer, version, bucket, option, ext, update_latest):
+def cli(
+    tile_cache: str, dataset: str, version: str, bucket: str, implementation: str
+) -> None:
     """ TILE_CACHE: path to local tile cache """
 
     handler = logging.StreamHandler(sys.stdout)
@@ -59,18 +49,22 @@ def cli(tile_cache, layer, version, bucket, option, ext, update_latest):
     )
     LOGGER.addHandler(handler)
 
-    upload_tiles(tile_cache, bucket, layer, version, option, ext, update_latest)
+    upload_tiles(
+        tile_cache=tile_cache,
+        bucket=bucket,
+        dataset=dataset,
+        version=version,
+        implementation=implementation,
+    )
 
 
 def upload_tiles(
-    tile_cache,
-    layer,
-    version,
-    bucket="gfw-tiles",
-    option="default",
-    ext="mvt",
-    update_latest=False,
-):
+    tile_cache: str,
+    dataset: str,
+    version: str,
+    bucket: str = "gfw-tiles",
+    implementation: str = "default",
+) -> None:
     """
     :param tile_cache: Path to local tile cache
     :param layer: Layer name
@@ -82,89 +76,49 @@ def upload_tiles(
     :return: None
     """
 
-    files = (
-        os.path.join(root, f).replace("\\", "/")
-        for (root, dirs, files) in os.walk(tile_cache)
-        for f in files
-    )
-
     LOGGER.info(
-        "Upload tile cache to {}/{}/{} using {} processes".format(
-            layer, version, option, CORES
-        )
+        f"Upload tile cache to {dataset}/{version}/{implementation} using {CORES} processes"
     )
 
-    pipe = files | _stage_copy(tile_cache, bucket, layer, version, option, ext)
+    # pipe files
+    pipe = _files(tile_cache) | _stage_copy(
+        tile_cache, bucket, dataset, version, implementation
+    )
 
+    # collect results
     for output in pipe.results():
         LOGGER.debug(output)
 
-    if update_latest:
-        _latest(bucket, layer, version)
+
+def _files(tile_cache: str) -> Iterator[str]:
+    """Collect all files in tile cache."""
+    for root, dirs, files in os.walk(tile_cache):
+        for f in files:
+            yield os.path.join(root, f).replace("\\", "/")
 
 
 @stage(workers=CORES)
-def _stage_copy(files, bucket, tile_cache, layer, version, option, ext):
+def _stage_copy(
+    files, tile_cache, bucket, dataset, version, implementation
+) -> Iterator[str]:
+    """Upload files to S3 and update file header."""
+
+    s3 = boto3.client("s3", endpoint_url=os.environ.get("ENDPOINT_URL", None))
+
     for f in files:
 
         file_name = os.path.basename(f)
-        prefix = ext + os.path.dirname(f).replace(tile_cache, "")
+        prefix = os.path.dirname(f).replace(tile_cache + "/", "")
         basename, extension = os.path.splitext(file_name)
 
-        if extension == ".pbf" or extension == ".mvt":
-            fname = basename
-            args = MVT_META
-        elif extension == ".png":
-            fname = basename
-            args = PNG_META
-        elif extension == ".jpg":
-            fname = basename
-            args = JPG_META
-        elif extension == ".json":
-            fname = file_name
-            args = JSON_META
-        else:
-            fname = file_name
+        try:
+            args = ARGS[extension]
+        except KeyError:
             args = {}
 
-        s3_path = "{}/{}/{}/{}/{}".format(layer, version, option, prefix, fname)
-        S3.upload_file(f, bucket, s3_path, ExtraArgs=args)
+        s3_path = f"{dataset}/{version}/{implementation}/{prefix}/{file_name}"
+        s3.upload_file(f, bucket, s3_path, ExtraArgs=args)
         yield s3_path
-
-
-def _latest(bucket, layer, version):
-
-    s3 = boto3.resource("s3")
-
-    try:
-        obj = s3.Object(bucket, "latest")
-        latest = json.loads(obj.get()["Body"].read().decode("utf-8"))
-    except ClientError as ex:
-        if (
-            ex.response["Error"]["Code"] == "NoSuchKey"
-            or ex.response["Error"]["Code"] == "SSLError"
-        ):
-            LOGGER.warning("No latest object found - returning empty")
-            latest = dict()
-        else:
-            raise ex
-
-    updated = False
-    for layer in latest:
-        if layer["name"] == layer:
-            layer["latest_version"] = version
-            updated = True
-            break
-
-    if not updated:
-        latest.append({"name": layer, "latest_version": version})
-
-    S3.put_object(
-        Body=json.dumps(latest),
-        Bucket=bucket,
-        ContentType="application/json",
-        Key="latest",
-    )
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 This tool helps to upload Vector and Raster tile caches(PBF/ MVT, PNG and JPG format) to AWS S3.
 Directory structure on S3 follows this schema:
 
-`layer_name/version/format/option/z/x/y`
+`layer_name/version/implementation/z/x/y.format`
 
 ## Installation
 
@@ -25,14 +25,11 @@ Usage: tileputty [OPTIONS] TILE_CACHE
   TILE_CACHE: path to local tile cache
 
 Options:
-  --bucket TEXT    AWS Bucket
-  --layer TEXT     Dataset Name
-  --version TEXT   Dataset Version ID
-  --option TEXT    Dataset Version ID
-  --ext TEXT       Tile Cache format
-  --update_latest  Update latest file in root folder with latest version
-                   number
-  --help           Show this message and exit.
+  --bucket TEXT          AWS Bucket
+  --dataset TEXT         Dataset Name
+  --version TEXT         Dataset Version ID
+  --implementation TEXT  Tile Cache Implementation
+  --help                 Show this message and exit
 ```
 
 Python
@@ -40,20 +37,16 @@ Python
 from tileputty.upload_tiles import upload_tiles
 
 tile_cache = "/path/to/tilecache/root"
-layer = "mylayer"
+dataset = "mylayer"
 version = "v1.0"
 bucket = "mybucket"
-option = "default"
-ext = "png"
-update_latest = False
+implementation = "default"
 
 upload_tiles(
     tile_cache,
-    layer,
+    dataset,
     version,
     bucket=bucket,
-    option=option,
-    ext=ext,
-    update_latest=update_latest,
+    implementation=implementation,
 )
 ```
