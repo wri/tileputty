@@ -15,10 +15,10 @@ CORES: int = multiprocessing.cpu_count()
 # File headers for different formats
 MVT_META = {
     "ContentType": "application/x-protobuf",
-    "Cache-Control": "max-age=31536000",  # 1 yr
+    "CacheControl": "max-age=31536000",  # 1 yr
 }
-PNG_META = {"ContentType": "image/png", "Cache-Control": "max-age=31536000"}  # 1 yr
-JPG_META = {"ContentType": "image/jpeg", "Cache-Control": "max-age=31536000"}  # 1 yr
+PNG_META = {"ContentType": "image/png", "CacheControl": "max-age=31536000"}  # 1 yr
+JPG_META = {"ContentType": "image/jpeg", "CacheControl": "max-age=31536000"}  # 1 yr
 JSON_META = {"ContentType": "application/json"}
 
 ARGS = {
