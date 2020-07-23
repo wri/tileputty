@@ -15,6 +15,7 @@ CORES: int = multiprocessing.cpu_count()
 # File headers for different formats
 MVT_META = {
     "ContentType": "application/x-protobuf",
+    "ContentEncoding": "gzip",
     "CacheControl": "max-age=31536000",  # 1 yr
 }
 PNG_META = {"ContentType": "image/png", "CacheControl": "max-age=31536000"}  # 1 yr
