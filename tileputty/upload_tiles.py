@@ -7,6 +7,7 @@ from typing import Iterator
 
 import boto3
 import click
+from botocore.config import Config
 from parallelpipe import stage
 
 LOGGER: Logger = logging.getLogger("tileputty")
@@ -104,7 +105,9 @@ def _stage_copy(
 ) -> Iterator[str]:
     """Upload files to S3 and update file header."""
 
-    s3 = boto3.client("s3", endpoint_url=os.environ.get("ENDPOINT_URL", None))
+    config = Config(retries={"max_attempts": 10, "mode": "standard"})
+    endpoint_url = os.environ.get("ENDPOINT_URL", None)
+    s3 = boto3.client("s3", config=config, endpoint_url=endpoint_url)
 
     for f in files:
 
