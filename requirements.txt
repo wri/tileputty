@@ -1,5 +1,5 @@
-boto3~=1.14.55
-click~=7.1.2
+boto3~=1.16.55
+typer~=0.3.2
 parallelpipe~=0.2.6
 pre-commit~=2.7.1
 pytest~=6.0.1
