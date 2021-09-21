@@ -2,14 +2,14 @@ from setuptools import setup
 
 setup(
     name="tileputty",
-    version="0.2.6",
+    version="0.2.7",
     description="Tool to upload a tile cache to AWS S3",
     url="https://github.com/wri/tileputty",
     packages=["tileputty"],
     author="Thomas Maschler",
     author_email="thomas.maschler@wri.org",
     license="MIT",
-    install_requires=["boto3~=1.16.55", "typer~=0.3.2", "parallelpipe~=0.2.6"],
+    install_requires=["boto3~=1.16.55", "typer~=0.4.0", "parallelpipe~=0.2.6"],
     entry_points={"console_scripts": ["tileputty=tileputty.upload_tiles:cli"]},
     classifiers=[
         "Programming Language :: Python :: 3",
