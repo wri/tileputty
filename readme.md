@@ -12,7 +12,7 @@ Directory structure on S3 follows this schema:
 ## Dependencies and Requirements
 
 This tool uses boto3 to upload files to S3.
-You will need to have write permission to the S3 bucket and you AWS credential in an accessible location,
+You will need to have write permission to the S3 bucket and your AWS credential in an accessible location,
 either as [environment variables](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#environment-variables)
 or in a [shared credential file](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#shared-credentials-file).
 

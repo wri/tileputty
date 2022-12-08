@@ -1,5 +1,5 @@
 boto3~=1.26.9
-parallelpipe~=0.2.6
+parallelpipe~=0.3.0
 pre-commit~=2.20.0
 pytest~=7.2.0
 typer~=0.7.0
